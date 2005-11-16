@@ -3,7 +3,7 @@ use lib('../lib');
 use Config::Universal;
 
 my $conf=new Config::Universal();
-if ($conf->ReadConfigFile("sample3-a.conf","sample3-b.confx")){
+if ($conf->ReadConfigFile("sample3-a.conf","sample3-b.conf")){
    printf STDERR ("ERROR: can't open configfile\n");
    exit(1);
 }

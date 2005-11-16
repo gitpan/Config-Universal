@@ -16,8 +16,8 @@ foreach my $objectname ($conf->GetObject("node")){
    }
 }
 printf("\nglobal variables:\n");
-foreach my $varname ($conf->GetVar()){
-   my $val=$conf->GetVar($varname);
+foreach my $varname ($conf->GetVarValue()){
+   my $val=$conf->GetVarValue($varname);
    printf(" %-18s%s\n",$varname.":",$val);
 }
 printf("\n");

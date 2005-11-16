@@ -8,7 +8,7 @@ if ($conf->ReadConfigFile("sample4-a.conf")){
    exit(1);
 }
 printf("\nobject types in configfile:%s\n",join(",",$conf->GetObject()));
-printf("global variables          :%s\n",join(",",$conf->GetVar()));
+printf("global variables          :%s\n",join(",",$conf->GetVarValue()));
 printf("\nobjects of type 'node':\n");
 foreach my $objectname ($conf->GetObject("node")){
    foreach my $object ($conf->GetObject("node",$objectname)){
