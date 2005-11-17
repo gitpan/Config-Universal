@@ -20,7 +20,6 @@
 package Config::Universal;
 use 5.005;
 use strict;
-use Data::Dumper;
 
 
 =head1 NAME
@@ -59,7 +58,7 @@ This module is designed to read object structured config files.
 
 use vars qw($VERSION); 
 
-$VERSION = '0.3';
+$VERSION = '0.5';
 
 
 =item C<new>(PARAM)
@@ -104,6 +103,9 @@ sub ReadConfigFile
       my $result=$self->_ReadConfigFile($filename);
       return($result) if ($result);
    }
+   #
+   #Objekte im FQ Hash erfassen
+   #
    foreach my $objtype (keys(%{$self->{Var}})){
       next if ($objtype eq '%GLOBAL%');
       foreach my $objname (keys(%{$self->{Var}->{$objtype}})){
@@ -111,11 +113,17 @@ sub ReadConfigFile
          $self->{FQ}->{$fqname}={obj=>$self->{Var}->{$objtype}->{$objname}};
       }
    }
+   #
+   # Parent-Struktur erfassen
+   #
    foreach my $obj (values(%{$self->{FQ}})){
       if (defined($obj->{obj}->{'$PARENT$'})){
          $obj->{parent}=$self->{FQ}->{$obj->{obj}->{'$PARENT$'}}->{obj};
       }
    }
+   #
+   # Transferieren und Entfernen der Struktur Variablen.
+   #
    foreach my $obj (values(%{$self->{FQ}})){
       $obj->{FQNAME}=$obj->{obj}->{'$FQNAME$'};
       $obj->{TYPE}=$obj->{obj}->{'$TYPE$'};
@@ -127,6 +135,32 @@ sub ReadConfigFile
       delete($obj->{obj}->{'$LINE$'});
       delete($obj->{obj}->{'$TYPE$'});
    }
+   #
+   # objecte dereferenzieren
+   #
+   my %objtypes;
+   map({$objtypes{$_}=1} $self->GetObject());
+   foreach my $obj (values(%{$self->{FQ}})){
+      foreach my $v (keys(%{$obj->{obj}})){
+         if (defined($objtypes{$v})){
+            my @objlist=();
+            my @namelist=($obj->{obj}->{$v});
+            @namelist=@{$namelist[0]} if (ref($namelist[0]) eq "ARRAY");
+            foreach my $name (@namelist){
+               my $obj=$self->GetObject($v,$name);
+               if (!defined($obj)){
+                  printf STDERR ("ERROR: can't resolv referenz to ".
+                                 "object '$name' with type '$v'".
+                                 "at \n");
+                  exit(1);
+               }
+               push(@objlist,$obj);
+            }
+            $obj->{obj}->{$v}=\@objlist;
+         }
+      }
+   }
+
    return(0);
 }
 
@@ -635,6 +669,21 @@ each run ob ReadConfigFile()!
       disk{
          name="/dev/hdb"
       }
+   }
+
+References objects would be automaticly checked and dereferenced. The
+corespondenting variable would have a array reference with the hash
+references to the adressed objects. The object names must be always
+spezified full qualified!
+
+   server "myserver" {
+      eventhandler="ev1","myserver.ev2"
+      eventhandler "ev2"{
+         name="/etc/ev2"
+      }
+   }
+   eventhandler "ev1"{
+      name="/etc/ev1"
    }
 
 =head1 AUTHORS
